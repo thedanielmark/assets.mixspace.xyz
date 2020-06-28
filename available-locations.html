@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MixSpace Locations</title>
+    <style>
+#chartdiv {
+  width: 100%;
+  height: 500px;
+  overflow: hidden;
+  position: relative;
+}
+
+.map-marker {
+    /* adjusting for the marker dimensions
+    so that it is centered on coordinates */
+    margin-left: -8px;
+    margin-top: -8px;
+    box-sizing: border-box;
+}
+.map-marker.map-clickable {
+    cursor: pointer;
+}
+.pulse {
+    width: 10px;
+    height: 10px;
+    border: 5px solid #6c63ff;
+    -webkit-border-radius: 30px;
+    -moz-border-radius: 30px;
+    border-radius: 30px;
+    background-color: #716f42;
+    z-index: 10;
+    position: absolute;
+    box-sizing: border-box;
+}
+.map-marker .dot {
+    border: 10px solid #7a72ff;
+    background: transparent;
+    -webkit-border-radius: 60px;
+    -moz-border-radius: 60px;
+    border-radius: 60px;
+    height: 50px;
+    width: 50px;
+    -webkit-animation: pulse 3s ease-out;
+    -moz-animation: pulse 3s ease-out;
+    animation: pulse 3s ease-out;
+    -webkit-animation-iteration-count: infinite;
+    -moz-animation-iteration-count: infinite;
+    animation-iteration-count: infinite;
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    z-index: 1;
+    opacity: 0;
+    box-sizing: border-box;
+}
+@-moz-keyframes pulse {
+   0% {
+      -moz-transform: scale(0);
+      opacity: 0.0;
+   }
+   25% {
+      -moz-transform: scale(0);
+      opacity: 0.1;
+   }
+   50% {
+      -moz-transform: scale(0.1);
+      opacity: 0.3;
+   }
+   75% {
+      -moz-transform: scale(0.5);
+      opacity: 0.5;
+   }
+   100% {
+      -moz-transform: scale(1);
+      opacity: 0.0;
+   }
+  }
+  @-webkit-keyframes "pulse" {
+   0% {
+      -webkit-transform: scale(0);
+      opacity: 0.0;
+   }
+   25% {
+      -webkit-transform: scale(0);
+      opacity: 0.1;
+   }
+   50% {
+      -webkit-transform: scale(0.1);
+      opacity: 0.3;
+   }
+   75% {
+      -webkit-transform: scale(0.5);
+      opacity: 0.5;
+   }
+   100% {
+      -webkit-transform: scale(1);
+      opacity: 0.0;
+   }
+}
+
+.wrapper {
+  height: 100vh;
+  display: flex;
+  align-items: flex-start;
+}
+
+</style>
+</head>
+<body bgcolor="#f0f0f0">
+    <div class="wrapper">
+      <div style="align-self: center;" id="chartdiv"></div>
+    </div>
+<script src="https://www.amcharts.com/lib/4/core.js"></script>
+<script src="https://www.amcharts.com/lib/4/maps.js"></script>
+<script src="https://www.amcharts.com/lib/4/geodata/worldLow.js"></script>
+<script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+am4core.ready(function() {
+
+// Themes begin
+am4core.useTheme(am4themes_animated);
+// Themes end
+
+// Create map instance
+var chart = am4core.create("chartdiv", am4maps.MapChart);
+chart.chartContainer.wheelable = false;
+chart.seriesContainer.draggable = false;
+chart.seriesContainer.resizable = false;
+chart.seriesContainer.events.disableType("doublehit");
+chart.chartContainer.background.events.disableType("doublehit");
+
+// Set map definition
+chart.geodata = am4geodata_worldLow;
+
+// Set projection
+chart.projection = new am4maps.projections.Miller();
+
+// Create map polygon series
+var polygonSeries = chart.series.push(new am4maps.MapPolygonSeries());
+
+// Exclude Antartica
+polygonSeries.exclude = ["AQ"];
+
+// Make map load polygon (like country names) data from GeoJSON
+polygonSeries.useGeodata = true;
+
+// Configure series
+var polygonTemplate = polygonSeries.mapPolygons.template;
+polygonTemplate.tooltipText = "{name}";
+polygonTemplate.fill = "#d0cde1";
+
+// Create hover state and set alternative fill color
+var hs = polygonTemplate.states.create("hover");
+hs.properties.fill = chart.colors.getIndex(2);
+
+// Add image series
+var imageSeries = chart.series.push(new am4maps.MapImageSeries());
+imageSeries.mapImages.template.propertyFields.longitude = "longitude";
+imageSeries.mapImages.template.propertyFields.latitude = "latitude";
+imageSeries.data = [ {
+  "title": "Seattle, Washington",
+  "latitude": 47.6062,
+  "longitude": -122.3320
+}, {
+  "title": "Los Angeles, California",
+  "latitude": 34.0522,
+  "longitude": -118.2436
+}, {
+  "title": "Silicon Valley, California",
+  "latitude": 37.3874,
+  "longitude": -122.0575
+}, {
+  "title": "Dallas, Texas",
+  "latitude": 32.7766,
+  "longitude": -96.7969
+}, {
+  "title": "Atlanta, Georgia",
+  "latitude": 33.7489,
+  "longitude": -84.3879
+}, {
+  "title": "Miami, Florida",
+  "latitude": 25.7616,
+  "longitude": -80.1917
+}, {
+  "title": "New Jersey",
+  "latitude": 40.0583,
+  "longitude": -74.4056
+}, {
+  "title": "Chicago, Illinois",
+  "latitude": 41.8781,
+  "longitude": -87.6297
+}, {
+  "title": "Portland, West US",
+  "latitude": 45.5122,
+  "longitude": -122.6587
+}, {
+  "title": "San Francisco, California",
+  "latitude": 37.7749,
+  "longitude": -122.4194
+}, {
+  "title": "Washington DC",
+  "latitude": 38.9071,
+  "longitude": -77.0368
+}, {
+  "title": "Cleveland",
+  "latitude": 41.4993,
+  "longitude": -81.6943
+}, {
+  "title": "Toronto Canada",
+  "latitude": 43.6532,
+  "longitude": -79.3831
+}, {
+  "title": "São Paulo",
+  "latitude": -23.5505,
+  "longitude": -46.6333
+}, {
+  "title": "London",
+  "latitude": 51.5002,
+  "longitude": -0.1262,
+  "url": "http://www.google.co.uk"
+}, {
+  "title": "Amsterdam",
+  "latitude": 52.3702,
+  "longitude": 4.8951
+}, {
+  "title": "Frankfurt",
+  "latitude": 50.1109,
+  "longitude": 8.6821
+}, {
+  "title": "Paris",
+  "latitude": 48.8566,
+  "longitude": 2.3522
+}, {
+  "title": "Stockholm",
+  "latitude": 59.3293,
+  "longitude": 18.0685
+}, {
+  "title": "Dublin",
+  "latitude": 53.3498,
+  "longitude": -6.2603
+}, {
+  "title": "Mumbai",
+  "latitude": 19.0759,
+  "longitude": 72.8776
+}, {
+  "title": "Chennai",
+  "latitude": 13.0826,
+  "longitude": 80.2707
+}, {
+  "title": "Singapore",
+  "latitude": 1.3520,
+  "longitude": 103.8198
+}, {
+  "title": "Seoul",
+  "latitude": 37.5665,
+  "longitude": 126.9779
+}, {
+  "title": "Tokyo",
+  "latitude": 35.6785,
+  "longitude": 139.6823,
+  "url": "http://www.google.co.jp"
+}, {
+  "title": "Sydney",
+  "latitude": -33.8688,
+  "longitude": 151.2092
+}, ];
+
+
+// add events to recalculate map position when the map is moved or zoomed
+chart.events.on( "ready", updateCustomMarkers );
+chart.events.on( "mappositionchanged", updateCustomMarkers );
+
+// this function will take current images on the map and create HTML elements for them
+function updateCustomMarkers( event ) {
+  
+  // go through all of the images
+  imageSeries.mapImages.each(function(image) {
+    // check if it has corresponding HTML element
+    if (!image.dummyData || !image.dummyData.externalElement) {
+      // create onex
+      image.dummyData = {
+        externalElement: createCustomMarker(image)
+      };
+    }
+
+    // reposition the element accoridng to coordinates
+    var xy = chart.geoPointToSVG( { longitude: image.longitude, latitude: image.latitude } );
+    image.dummyData.externalElement.style.top = xy.y + 'px';
+    image.dummyData.externalElement.style.left = xy.x + 'px';
+  });
+
+}
+
+// this function creates and returns a new marker element
+function createCustomMarker( image ) {
+  
+  var chart = image.dataItem.component.chart;
+
+  // create holder
+  var holder = document.createElement( 'div' );
+  holder.className = 'map-marker';
+  holder.title = image.dataItem.dataContext.title;
+  holder.style.position = 'absolute';
+
+  // maybe add a link to it?
+  if ( undefined != image.url ) {
+    holder.onclick = function() {
+      window.location.href = image.url;
+    };
+    holder.className += ' map-clickable';
+  }
+
+  // create dot
+  var dot = document.createElement( 'div' );
+  dot.className = 'dot';
+  holder.appendChild( dot );
+
+  // create pulse
+  var pulse = document.createElement( 'div' );
+  pulse.className = 'pulse';
+  holder.appendChild( pulse );
+
+  // append the marker to the map container
+  chart.svgContainer.htmlElement.appendChild( holder );
+
+  return holder;
+}
+
+}); // end am4core.ready()
+
+// custom javascript
+$(document).ready(function () {
+$('g[aria-labelledby="id-79-title"]').removeAttr("style").hide();
+});
+</script>
+</body>
+</html>

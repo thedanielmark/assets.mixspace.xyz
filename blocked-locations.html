@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MixSpace Locations</title>
+    <style>
+#chartdiv {
+  width: 100%;
+  height: 500px;
+  overflow: hidden;
+  position: relative;
+}
+
+.map-marker {
+    /* adjusting for the marker dimensions
+    so that it is centered on coordinates */
+    margin-left: -8px;
+    margin-top: -8px;
+    box-sizing: border-box;
+}
+.map-marker.map-clickable {
+    cursor: pointer;
+}
+.pulse {
+    width: 10px;
+    height: 10px;
+    border: 5px solid #6c63ff;
+    -webkit-border-radius: 30px;
+    -moz-border-radius: 30px;
+    border-radius: 30px;
+    background-color: #716f42;
+    z-index: 10;
+    position: absolute;
+    box-sizing: border-box;
+}
+.map-marker .dot {
+    border: 10px solid #7a72ff;
+    background: transparent;
+    -webkit-border-radius: 60px;
+    -moz-border-radius: 60px;
+    border-radius: 60px;
+    height: 50px;
+    width: 50px;
+    -webkit-animation: pulse 3s ease-out;
+    -moz-animation: pulse 3s ease-out;
+    animation: pulse 3s ease-out;
+    -webkit-animation-iteration-count: infinite;
+    -moz-animation-iteration-count: infinite;
+    animation-iteration-count: infinite;
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    z-index: 1;
+    opacity: 0;
+    box-sizing: border-box;
+}
+@-moz-keyframes pulse {
+   0% {
+      -moz-transform: scale(0);
+      opacity: 0.0;
+   }
+   25% {
+      -moz-transform: scale(0);
+      opacity: 0.1;
+   }
+   50% {
+      -moz-transform: scale(0.1);
+      opacity: 0.3;
+   }
+   75% {
+      -moz-transform: scale(0.5);
+      opacity: 0.5;
+   }
+   100% {
+      -moz-transform: scale(1);
+      opacity: 0.0;
+   }
+  }
+  @-webkit-keyframes "pulse" {
+   0% {
+      -webkit-transform: scale(0);
+      opacity: 0.0;
+   }
+   25% {
+      -webkit-transform: scale(0);
+      opacity: 0.1;
+   }
+   50% {
+      -webkit-transform: scale(0.1);
+      opacity: 0.3;
+   }
+   75% {
+      -webkit-transform: scale(0.5);
+      opacity: 0.5;
+   }
+   100% {
+      -webkit-transform: scale(1);
+      opacity: 0.0;
+   }
+}
+
+.wrapper {
+  height: 100vh;
+  display: flex;
+  align-items: flex-start;
+}
+
+</style>
+</head>
+<body bgcolor="#f2f2f2">
+    <div class="wrapper">
+      <div style="align-self: center;" id="chartdiv"></div>
+    </div>
+
+<!-- Resources -->
+<script src="https://www.amcharts.com/lib/4/core.js"></script>
+<script src="https://www.amcharts.com/lib/4/maps.js"></script>
+<script src="https://www.amcharts.com/lib/4/geodata/worldLow.js"></script>
+<script src="https://www.amcharts.com/lib/4/geodata/data/countries2.js"></script>
+<script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+am4core.ready(function() {
+
+// Themes begin
+am4core.useTheme(am4themes_animated);
+// Themes end
+
+var continents = {
+  "AF": 0,
+  "AN": 1,
+  "AS": 2,
+  "EU": 3,
+  "NA": 4,
+  "OC": 5,
+  "SA": 6
+}
+
+// Create map instance
+var chart = am4core.create("chartdiv", am4maps.MapChart);
+chart.projection = new am4maps.projections.Miller();
+chart.chartContainer.wheelable = false;
+chart.seriesContainer.draggable = false;
+chart.seriesContainer.resizable = false;
+chart.seriesContainer.events.disableType("doublehit");
+chart.chartContainer.background.events.disableType("doublehit");
+
+// Create map polygon series for world map
+var worldSeries = chart.series.push(new am4maps.MapPolygonSeries());
+worldSeries.useGeodata = true;
+worldSeries.geodata = am4geodata_worldLow;
+worldSeries.exclude = ["AQ"];
+
+var worldPolygon = worldSeries.mapPolygons.template;
+worldPolygon.tooltipText = "{name}";
+worldPolygon.nonScalingStroke = true;
+worldPolygon.strokeOpacity = 0.5;
+worldPolygon.fill = am4core.color("#eee");
+worldPolygon.propertyFields.fill = "color";
+
+var hs = worldPolygon.states.create("hover");
+hs.properties.fill = chart.colors.getIndex(9);
+
+
+// Create country specific series (but hide it for now)
+var countrySeries = chart.series.push(new am4maps.MapPolygonSeries());
+countrySeries.useGeodata = true;
+countrySeries.hide();
+countrySeries.geodataSource.events.on("done", function(ev) {
+  worldSeries.hide();
+  countrySeries.show();
+});
+
+var countryPolygon = countrySeries.mapPolygons.template;
+countryPolygon.tooltipText = "{name}";
+countryPolygon.nonScalingStroke = true;
+countryPolygon.strokeOpacity = 0.5;
+countryPolygon.fill = am4core.color("#eee");
+
+var hs = countryPolygon.states.create("hover");
+hs.properties.fill = chart.colors.getIndex(9);
+
+// Set up click events
+worldPolygon.events.on("hit", function(ev) {
+  ev.target.series.chart.zoomToMapObject(ev.target);
+  var map = ev.target.dataItem.dataContext.map;
+  if (map) {
+    ev.target.isHover = false;
+    countrySeries.geodataSource.url = "https://www.amcharts.com/lib/4/geodata/json/" + map + ".json";
+    countrySeries.geodataSource.load();
+  }
+});
+
+// Set up data for countries
+var data = [];
+for(var id in am4geodata_data_countries2) {
+  if (am4geodata_data_countries2.hasOwnProperty(id)) {
+    var country = am4geodata_data_countries2[id];
+    if (country.maps.length) {
+      data.push({
+        id: id,
+        color: chart.colors.getIndex(continents[country.continent_code]),
+        map: country.maps[0]
+      });
+    }
+  }
+}
+worldSeries.data = data;
+
+var homeButton = new am4core.Button();
+homeButton.events.on("hit", function() {
+  worldSeries.show();
+  countrySeries.hide();
+  chart.goHome();
+});
+
+homeButton.icon = new am4core.Sprite();
+homeButton.padding(7, 5, 7, 5);
+homeButton.width = 30;
+homeButton.icon.path = "M16,8 L14,8 L14,16 L10,16 L10,10 L6,10 L6,16 L2,16 L2,8 L0,8 L8,0 L16,8 Z M16,8";
+homeButton.marginBottom = 10;
+homeButton.parent = chart.zoomControl;
+
+}); // end am4core.ready()
+
+// custom javascript
+$(document).ready(function () {
+$('g[aria-labelledby="id-79-title"]').removeAttr("style").hide();
+});
+</script>
+</body>
+</html>
